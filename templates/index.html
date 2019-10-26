@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="jumbotron">
+    <h1>Subscriptions</h1>
+</div>
+
+<div class="row">
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Name</th>
+                <th scope="col">State</th>
+                <th scope="col">OfferId</th>
+                <th scope="col">PlanId</th>
+                <th scope="col">Quantity</th>
+                <th scope="col">SubscriptionId</th>
+                <th scope="col">Actions</th>
+                <th scope="col">Pending operations</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for key, subscription in subscriptions.items() %}
+                {% for item in subscription %}
+                    <tr>
+                        <td>{{ item['name'] }}</td>
+                        <td>{{ item['saasSubscriptionStatus'] }}</td>
+                        <td>{{ item['offerId'] }}</td>
+                        <td>{{ item['planId'] }}</td>
+                        <td>{{ 0 }}</td>
+                        <td>{{ item['id'] }}</td>
+                        <td><a href={{ url_for('edit', subscriptionid=item['id']) }}>Update</a></td>
+                        <td>{{ 0 }}</td>
+                    </tr>
+                {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="col-md-4">
+        <h2>Getting started</h2>
+        <p>
+
+            Flask gives you a powerful, patterns-based way to build dynamic websites that
+            enables a clean separation of concerns and gives you full control over markup
+            for enjoyable, agile development.
+        </p>
+        <p><a class="btn btn-default" href="http://flask.pocoo.org/docs/">Learn more &raquo;</a></p>
+    </div>
+    <div class="col-md-4">
+        <h2>Get more libraries</h2>
+        <p>The Python Package Index is a repository of software for the Python programming language.</p>
+        <p><a class="btn btn-default" href="https://pypi.python.org/pypi">Learn more &raquo;</a></p>
+    </div>
+    <div class="col-md-4">
+        <h2>Microsoft Azure</h2>
+        <p>You can easily publish to Microsoft Azure using Visual Studio. Find out how you can host your application using a free trial today.</p>
+        <p><a class="btn btn-default" href="http://azure.microsoft.com">Learn more &raquo;</a></p>
+    </div>
+</div>
+
+{% endblock %}
