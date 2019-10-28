@@ -48,8 +48,14 @@ def edit(subscriptionid):
 
 @app.route("/update", methods=['POST'])
 def updatesubscription():
-    app.logger.info(request.form['selectplan'])
-    return redirect(url_for("login"))
+    selected_subscription = request.form['subscription_id']
+    selected_plan = request.form['selectedplan']
+    update_subscription_response = update_subscriptionplan(selected_subscription, selected_plan)
+    app.logger.info(update_subscription_response.status_code)
+    if update_subscription_response.status_code == 202:
+        return redirect(url_for("login"))
+    else:
+        return render_template('error.html', user=session["user"], response_statuscode = update_subscription_response.status_code)
 
 @app.route("/logout")
 def logout():
@@ -84,9 +90,9 @@ def _get_token_from_cache(scope=None):
         _save_cache(cache)
         return result
 
+
 def get_subscriptions():
     subscriptions_data=  call_marketplace_api(app_config.MARKETPLACEAPI_ENDPOINT+ app_config.MARKETPLACEAPI_API_VERSION)
-    app.logger.info(subscriptions_data)
     return subscriptions_data
  
 def get_subscription(subscription):
@@ -100,6 +106,14 @@ def get_availableplans(subscription):
     app.logger.info('%s availableplans', availableplans.items())
     return availableplans
 
+def update_subscriptionplan(subscription, plan_id):
+    request_plan_payload = "{\"planId\": \""+ plan_id +"\" }"
+    updateresponse = call_marketplace_api(app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription +       app_config.MARKETPLACEAPI_API_VERSION,                                      
+    'PATCH', 
+    request_plan_payload
+    )
+    return updateresponse
+    
 
 def get_marketplace_access_token():
     token_url = app_config.AUTHORITY + app_config.MARKETPLACEAPI_TENANTID + '/oauth2/token'
@@ -133,20 +147,25 @@ def call_marketplace_api(request_url, request_method='GET', request_payload=''):
                         ).json()
         return reponse_data
     elif request_method == 'POST':
-        requests.post(  # Use token to call downstream service
+        reponse_data=requests.post(  # Use token to call downstream service
                     request_url,
-                    headers=headers
+                    headers=headers,
+                    data=request_payload,
         ).json()
+        return reponse_data
     elif request_method == 'PATCH':
-        requests.patch(  # Use token to call downstream service
+        reponse_data=requests.patch(  # Use token to call downstream service
                     request_url,
-                    headers=headers
-        ).json()
+                    headers=headers,
+                    data=request_payload,
+        )
+        return reponse_data
     elif request_method == 'DELETE' :
-        requests.get(  # Use token to call downstream service
+        reponse_data=requests.get(  # Use token to call downstream service
                     request_url,
                     headers=headers
         ).json()
+        return reponse_data
 
 
 if __name__ == "__main__":
