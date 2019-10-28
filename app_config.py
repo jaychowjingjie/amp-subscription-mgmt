@@ -41,5 +41,5 @@ REDIRECT_PATH = "/getAToken"
 SESSION_TYPE = "filesystem"  # So token cache will be stored in server-side session
 SCOPE = [""]
 AUTHORITY = "https://login.microsoftonline.com/"
-MARKETPLACEAPI_ENDPOINT = 'https://marketplaceapi.microsoft.com/api/saas/subscriptions?api-version='
-MARKETPLACEAPI_API_VERSION="2018-08-31"
+MARKETPLACEAPI_ENDPOINT = 'https://marketplaceapi.microsoft.com/api/saas/subscriptions'
+MARKETPLACEAPI_API_VERSION="?api-version=2018-08-31"

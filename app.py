@@ -42,8 +42,14 @@ def authorized():
 
 @app.route("/edit/<subscriptionid>")
 def edit(subscriptionid):
-    return subscriptionid
+    subscription = get_subscription(subscriptionid)
+    plans = get_availableplans(subscriptionid)
+    return render_template('managesubscription.html', user=session["user"], subscription = subscription, available_plans= plans)
 
+@app.route("/update", methods=['POST'])
+def updatesubscription():
+    app.logger.info(request.form['selectplan'])
+    return redirect(url_for("login"))
 
 @app.route("/logout")
 def logout():
@@ -79,22 +85,22 @@ def _get_token_from_cache(scope=None):
         return result
 
 def get_subscriptions():
-    token = _get_token_from_cache(app_config.SCOPE)
-    if not token:
-        return redirect(url_for("login"))
-    
-    # get token for market place api
-    access_token_response = get_marketplace_access_token()
-    
-    subscriptions_data=  requests.get(  # Use token to call downstream service
-        app_config.MARKETPLACEAPI_ENDPOINT+ app_config.MARKETPLACEAPI_API_VERSION,
-        headers={'Authorization': 'Bearer ' + access_token_response['access_token'],
-                 'Content-Type': 'application/json',
-                 'x-ms-requestid': str(uuid.uuid4()),
-                 'x-ms-correlationid': str(uuid.uuid4())},
-        ).json()
+    subscriptions_data=  call_marketplace_api(app_config.MARKETPLACEAPI_ENDPOINT+ app_config.MARKETPLACEAPI_API_VERSION)
+    app.logger.info(subscriptions_data)
     return subscriptions_data
  
+def get_subscription(subscription):
+    subscription_data=  call_marketplace_api(  # Use token to call downstream service
+        app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + app_config.MARKETPLACEAPI_API_VERSION)
+    return subscription_data
+
+def get_availableplans(subscription):
+    availableplans = call_marketplace_api(
+        request_url=app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + "/listAvailablePlans" + app_config.MARKETPLACEAPI_API_VERSION)
+    app.logger.info('%s availableplans', availableplans.items())
+    return availableplans
+
+
 def get_marketplace_access_token():
     token_url = app_config.AUTHORITY + app_config.MARKETPLACEAPI_TENANTID + '/oauth2/token'
     data = {'grant_type': 'client_credentials', 
@@ -106,6 +112,41 @@ def get_marketplace_access_token():
     # get token for market place api
     access_token_response = requests.post(token_url, headers=api_call_headers, data=data).json()
     return access_token_response
+
+def call_marketplace_api(request_url, request_method='GET', request_payload=''):
+    
+    token = _get_token_from_cache(app_config.SCOPE)
+    if not token:
+        return redirect(url_for("login"))
+    
+    # get token for market place api
+    access_token_response = get_marketplace_access_token() 
+    headers={'Authorization': 'Bearer ' + access_token_response['access_token'],
+                            'Content-Type': 'application/json',
+                            'x-ms-requestid': str(uuid.uuid4()),
+                            'x-ms-correlationid': str(uuid.uuid4())}
+    
+    if request_method == 'GET':
+        reponse_data= requests.get(  # Use token to call downstream service
+                        request_url,
+                        headers=headers
+                        ).json()
+        return reponse_data
+    elif request_method == 'POST':
+        requests.post(  # Use token to call downstream service
+                    request_url,
+                    headers=headers
+        ).json()
+    elif request_method == 'PATCH':
+        requests.patch(  # Use token to call downstream service
+                    request_url,
+                    headers=headers
+        ).json()
+    elif request_method == 'DELETE' :
+        requests.get(  # Use token to call downstream service
+                    request_url,
+                    headers=headers
+        ).json()
 
 
 if __name__ == "__main__":
