@@ -4,3 +4,4 @@ flask_restful
 Flask-Session
 requests
 msal
+python-dotenv

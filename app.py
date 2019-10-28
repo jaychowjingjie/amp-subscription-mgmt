@@ -5,7 +5,6 @@ from flask_session import Session  # https://pythonhosted.org/Flask-Session
 import msal
 import app_config
 
-
 app = Flask(__name__)
 app.config.from_object(app_config)
 Session(app)
@@ -25,7 +24,6 @@ def login():
     else:
         subscriptions = get_subscriptions()
         return render_template('index.html', user=session["user"], subscriptions= subscriptions, version=msal.__version__)
-    #return "<a href='%s'>Login with Microsoft Identity</a>" % auth_url
 
 @app.route(app_config.REDIRECT_PATH)  # Its absolute URL must match your app's redirect_uri set in AAD
 def authorized():
@@ -42,8 +40,6 @@ def authorized():
         _save_cache(cache)
     return redirect(url_for("login"))
 
-
-
 @app.route("/edit/<subscriptionid>")
 def edit(subscriptionid):
     return subscriptionid
@@ -53,7 +49,7 @@ def edit(subscriptionid):
 def logout():
     session.clear()  # Wipe out user and its token cache from session
     return redirect(  # Also logout from your tenant's web session
-        app_config.AUTHORITY + "/oauth2/v2.0/logout" +
+        app_config.AUTHORITY + "/" + app_config.TENANT_ID + "/oauth2/v2.0/logout" +
         "?post_logout_redirect_uri=" + url_for("login", _external=True))
 
 def _load_cache():
@@ -68,8 +64,10 @@ def _save_cache(cache):
 
 def _build_msal_app(cache=None):
     return msal.ConfidentialClientApplication(
-        app_config.CLIENT_ID, authority=app_config.AUTHORITY,
-        client_credential=app_config.CLIENT_SECRET, token_cache=cache)
+        app_config.CLIENT_ID,
+        authority=app_config.AUTHORITY + app_config.TENANT_ID,
+        client_credential=app_config.CLIENT_SECRET, 
+        token_cache=cache)
 
 def _get_token_from_cache(scope=None):
     cache = _load_cache()  # This web app maintains one cache per session
@@ -89,7 +87,7 @@ def get_subscriptions():
     access_token_response = get_marketplace_access_token()
     
     subscriptions_data=  requests.get(  # Use token to call downstream service
-        app_config.MARKETPLACEAPI_ENDPOINT,
+        app_config.MARKETPLACEAPI_ENDPOINT+ app_config.MARKETPLACEAPI_API_VERSION,
         headers={'Authorization': 'Bearer ' + access_token_response['access_token'],
                  'Content-Type': 'application/json',
                  'x-ms-requestid': str(uuid.uuid4()),
@@ -98,10 +96,10 @@ def get_subscriptions():
     return subscriptions_data
  
 def get_marketplace_access_token():
-    token_url = app_config.M_AUTHORITY + '/oauth2/token'
+    token_url = app_config.AUTHORITY + app_config.MARKETPLACEAPI_TENANTID + '/oauth2/token'
     data = {'grant_type': 'client_credentials', 
-            'client_id' : app_config.M_CLIENT_ID, 
-            'client_secret' : app_config.M_CLIENT_SECRET,  
+            'client_id' : app_config.MARKETPLACEAPI_CLIENT_ID, 
+            'client_secret' : app_config.MARKETPLACEAPI_CLIENT_SECRET,  
             'resource':'62d94f6c-d599-489b-a797-3e10e42fbe22'}
     
     api_call_headers = {'content-type': 'application/x-www-form-urlencoded'}
