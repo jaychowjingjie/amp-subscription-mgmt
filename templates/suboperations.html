@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="jumbotron">
+    <h1>Subscription Operations</h1>
+</div>
+
+<div class="row">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">SubscriptionId</th>
+                    <th scope="col">ActivityId</th>
+                    <th scope="col">OfferId</th>
+                    <th scope="col">PlanId</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">PublisherId</th>
+                    <th scope="col">Action</th>
+                    <th scope="col">TimeStamp</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Update Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for operation in operations %}
+                        <tr>
+                            <td>{{ operation['subscriptionId'] }}</td>
+                            <td>{{ operation['activityId'] }}</td>
+                            <td>{{ operation['offerId'] }}</td>
+                            <td>{{ operation['planId'] }}</td>
+                            <td>{{ operation['quantity'] }}</td>
+                            <td>{{ operation['publisherId'] }}</td>
+                            <td>{{ operation['action'] }}</td>
+                            <td>{{ operation['timeStamp'] }}</td>
+                            <td>{{ operation['status'] }}</td>
+                            <td  class="text-center">
+                                <a href={{ url_for('updateoperation', operationid=operation['id']) }}>
+                                    <span  style="font-size: 15px" class="glyphicon glyphicon-wrench"></span>
+                                </a>
+                            </td>
+                        </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}

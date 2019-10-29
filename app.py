@@ -57,6 +57,28 @@ def updatesubscription():
     else:
         return render_template('error.html', user=session["user"], response_statuscode = update_subscription_response.status_code)
 
+@app.route("/operations/<subscriptionid>")
+def operations(subscriptionid):
+    sub_operations = get_sub_operations(subscriptionid)
+    app.logger.info(type(sub_operations))
+    return render_template('suboperations.html', user=session["user"], operations = sub_operations)
+
+@app.route("/operation/<subscriptionId>/<operationid>")
+def getoperation(subscriptionId, operationid):
+    operation = get_operation(subscriptionId, operationid)
+    app.logger.info(type(operation))
+    return render_template('error.html', user=session["user"], operation = operation)
+
+@app.route("/updateoperation/<operationid>")
+def updateoperation(operationid):
+    #sub_operations = get_sub_operations(operationid)
+    app.logger.info(type(sub_operations))
+    #return render_template('suboperations.html', user=session["user"], operations = sub_operations)
+
+# todo change quantity
+
+# todo delete subscription
+
 @app.route("/logout")
 def logout():
     session.clear()  # Wipe out user and its token cache from session
@@ -114,6 +136,17 @@ def update_subscriptionplan(subscription, plan_id):
     )
     return updateresponse
     
+def get_sub_operations(subscription):
+    sub_operations_data =  call_marketplace_api(  # Use token to call downstream service
+        app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + "/operations" + app_config.MARKETPLACEAPI_API_VERSION)
+    app.logger.info(sub_operations_data)
+    return sub_operations_data
+
+def get_operation(subscriptionid, operationid):
+    sub_operation_data =  call_marketplace_api(  # Use token to call downstream service
+        app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscriptionid + "/operations" + "/" + operationid + app_config.MARKETPLACEAPI_API_VERSION)
+    app.logger.info(sub_operation_data)
+    return sub_operation_data
 
 def get_marketplace_access_token():
     token_url = app_config.AUTHORITY + app_config.MARKETPLACEAPI_TENANTID + '/oauth2/token'

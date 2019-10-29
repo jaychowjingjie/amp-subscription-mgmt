@@ -42,4 +42,5 @@ SESSION_TYPE = "filesystem"  # So token cache will be stored in server-side sess
 SCOPE = [""]
 AUTHORITY = "https://login.microsoftonline.com/"
 MARKETPLACEAPI_ENDPOINT = 'https://marketplaceapi.microsoft.com/api/saas/subscriptions'
-MARKETPLACEAPI_API_VERSION="?api-version=2018-08-31"
+MARKETPLACEAPI_OPERATIONS_ENDPOINT = 'https://marketplaceapi.microsoft.com/api/saas/operations'
+MARKETPLACEAPI_API_VERSION="?api-version=2018-09-15"

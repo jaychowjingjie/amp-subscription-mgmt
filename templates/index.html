@@ -16,7 +16,7 @@
                 <th scope="col">PlanId</th>
                 <th scope="col">Quantity</th>
                 <th scope="col">SubscriptionId</th>
-                <th scope="col">Actions</th>
+                <th scope="col">Actions(Change Plan/Quantity)</th>
                 <th scope="col">Pending operations</th>
             </tr>
         </thead>
@@ -28,14 +28,18 @@
                         <td>{{ item['saasSubscriptionStatus'] }}</td>
                         <td>{{ item['offerId'] }}</td>
                         <td>{{ item['planId'] }}</td>
-                        <td class="text-center">{{ 0 }}</td>
+                        <td class="text-center">{{ item['quantity'] }}</td>
                         <td>{{ item['id'] }}</td>
                         <td>
                             {% if item['saasSubscriptionStatus'] !="Unsubscribed"  %}
                             <a href={{ url_for('edit', subscriptionid=item['id']) }}>Update</a>
                             {% endif %}
                         </td>
-                        <td  class="text-center">{{ 0 }}</td>
+                        <td  class="text-center">
+                            <a href={{ url_for('operations', subscriptionid=item['id']) }}>
+                                <span  style="font-size: 15px" class="glyphicon glyphicon-wrench"></span>
+                            </a>
+                        </td>
                     </tr>
                 {% endfor %}
             {% endfor %}
