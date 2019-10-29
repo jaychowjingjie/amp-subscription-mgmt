@@ -35,7 +35,7 @@
                             <td>{{ operation['timeStamp'] }}</td>
                             <td>{{ operation['status'] }}</td>
                             <td  class="text-center">
-                                <a href={{ url_for('updateoperation', operationid=operation['id']) }}>
+                                <a href={{ url_for('updateoperation', operationid=operation['id'], subid=operation['subscriptionId'], planid=operation['planId'], quantity=operation['quantity'], status= "Success"  ) }}>
                                     <span  style="font-size: 15px" class="glyphicon glyphicon-wrench"></span>
                                 </a>
                             </td>

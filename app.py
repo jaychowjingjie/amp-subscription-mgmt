@@ -40,6 +40,15 @@ def authorized():
         _save_cache(cache)
     return redirect(url_for("login"))
 
+@app.route("/landingpage")
+def landingpage():
+    token = request.args.get('token')
+    if not token:
+        return render_template('error.html', user=session["user"])    
+    subscription = get_subscription_by_token(token)
+    plans = get_availableplans(subscriptionid)
+    return render_template('managesubscription.html', user=session["user"], subscription = subscription, available_plans= plans)
+
 @app.route("/edit/<subscriptionid>")
 def edit(subscriptionid):
     subscription = get_subscription(subscriptionid)
@@ -51,7 +60,6 @@ def updatesubscription():
     selected_subscription = request.form['subscription_id']
     selected_plan = request.form['selectedplan']
     update_subscription_response = update_subscriptionplan(selected_subscription, selected_plan)
-    app.logger.info(update_subscription_response.status_code)
     if update_subscription_response.status_code == 202:
         return redirect(url_for("login"))
     else:
@@ -60,20 +68,18 @@ def updatesubscription():
 @app.route("/operations/<subscriptionid>")
 def operations(subscriptionid):
     sub_operations = get_sub_operations(subscriptionid)
-    app.logger.info(type(sub_operations))
     return render_template('suboperations.html', user=session["user"], operations = sub_operations)
 
-@app.route("/operation/<subscriptionId>/<operationid>")
-def getoperation(subscriptionId, operationid):
-    operation = get_operation(subscriptionId, operationid)
-    app.logger.info(type(operation))
-    return render_template('error.html', user=session["user"], operation = operation)
-
+# to do
 @app.route("/updateoperation/<operationid>")
 def updateoperation(operationid):
+    subid = request.args.get('subid')
+    planid = request.args.get('planid')
+    quantity = request.args.get('quantity')
+    status = request.args.get('status')
     #sub_operations = get_sub_operations(operationid)
-    app.logger.info(type(sub_operations))
-    #return render_template('suboperations.html', user=session["user"], operations = sub_operations)
+    request_payload = "{\"planId\": \"%s\",\"quantity\": \"%s\",\"status\": \"%s\"}" % (planid, quantity, status)
+    return redirect(url_for("operations", subscriptionid=subid  ))
 
 # todo change quantity
 
@@ -122,10 +128,14 @@ def get_subscription(subscription):
         app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + app_config.MARKETPLACEAPI_API_VERSION)
     return subscription_data
 
+def get_subscription_by_token(token):
+    subscription_data=  call_marketplace_api(app_config.MARKETPLACEAPI_ENDPOINT +"/resolve" + app_config.MARKETPLACEAPI_API_VERSION
+                                            ,resolve_token= token, resolve_url= True)
+    return subscription_data
+
 def get_availableplans(subscription):
     availableplans = call_marketplace_api(
         request_url=app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + "/listAvailablePlans" + app_config.MARKETPLACEAPI_API_VERSION)
-    app.logger.info('%s availableplans', availableplans.items())
     return availableplans
 
 def update_subscriptionplan(subscription, plan_id):
@@ -139,14 +149,7 @@ def update_subscriptionplan(subscription, plan_id):
 def get_sub_operations(subscription):
     sub_operations_data =  call_marketplace_api(  # Use token to call downstream service
         app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + "/operations" + app_config.MARKETPLACEAPI_API_VERSION)
-    app.logger.info(sub_operations_data)
     return sub_operations_data
-
-def get_operation(subscriptionid, operationid):
-    sub_operation_data =  call_marketplace_api(  # Use token to call downstream service
-        app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscriptionid + "/operations" + "/" + operationid + app_config.MARKETPLACEAPI_API_VERSION)
-    app.logger.info(sub_operation_data)
-    return sub_operation_data
 
 def get_marketplace_access_token():
     token_url = app_config.AUTHORITY + app_config.MARKETPLACEAPI_TENANTID + '/oauth2/token'
@@ -160,7 +163,7 @@ def get_marketplace_access_token():
     access_token_response = requests.post(token_url, headers=api_call_headers, data=data).json()
     return access_token_response
 
-def call_marketplace_api(request_url, request_method='GET', request_payload=''):
+def call_marketplace_api(request_url, request_method='GET', request_payload='', resolve_token='', resolve_url=False):
     
     token = _get_token_from_cache(app_config.SCOPE)
     if not token:
@@ -168,7 +171,17 @@ def call_marketplace_api(request_url, request_method='GET', request_payload=''):
     
     # get token for market place api
     access_token_response = get_marketplace_access_token() 
-    headers={'Authorization': 'Bearer ' + access_token_response['access_token'],
+    global marketplaceheaders
+    if not resolve_url:
+        
+        marketplaceheaders={'Authorization': 'Bearer ' + access_token_response['access_token'],
+                            'Content-Type': 'application/json',
+                            'x-ms-requestid': str(uuid.uuid4()),
+                            'x-ms-correlationid': str(uuid.uuid4())}
+    else:
+        global headers
+        marketplaceheaders={'Authorization': 'Bearer ' + access_token_response['access_token'],
+                            'x-ms-marketplace-token': resolve_token,
                             'Content-Type': 'application/json',
                             'x-ms-requestid': str(uuid.uuid4()),
                             'x-ms-correlationid': str(uuid.uuid4())}
@@ -176,27 +189,27 @@ def call_marketplace_api(request_url, request_method='GET', request_payload=''):
     if request_method == 'GET':
         reponse_data= requests.get(  # Use token to call downstream service
                         request_url,
-                        headers=headers
+                        headers=marketplaceheaders
                         ).json()
         return reponse_data
     elif request_method == 'POST':
         reponse_data=requests.post(  # Use token to call downstream service
                     request_url,
-                    headers=headers,
+                    headers=marketplaceheaders,
                     data=request_payload,
         ).json()
         return reponse_data
     elif request_method == 'PATCH':
         reponse_data=requests.patch(  # Use token to call downstream service
                     request_url,
-                    headers=headers,
+                    headers=marketplaceheaders,
                     data=request_payload,
         )
         return reponse_data
     elif request_method == 'DELETE' :
         reponse_data=requests.get(  # Use token to call downstream service
                     request_url,
-                    headers=headers
+                    headers=marketplaceheaders
         ).json()
         return reponse_data
 
