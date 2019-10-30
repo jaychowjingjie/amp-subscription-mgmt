@@ -35,6 +35,13 @@ MARKETPLACEAPI_CLIENT_SECRET = os.getenv('MARKETPLACEAPI_CLIENT_SECRET')
 if not MARKETPLACEAPI_CLIENT_SECRET:
      raise ValueError("Need to define MARKETPLACEAPI_CLIENT_SECRET environment variable")
 
+STORAGE_CONNECTION_STRING = os.getenv('STORAGE_CONNECTION_STRING')
+if not STORAGE_CONNECTION_STRING:
+     raise ValueError("Need to define STORAGE_CONNECTION_STRING environment variable")
+STORAGE_TABLE_NAME = os.getenv('STORAGE_TABLE_NAME')
+if not STORAGE_TABLE_NAME:
+     raise ValueError("Need to define STORAGE_TABLE_NAME environment variable")
+
 # It will be used to form an absolute URL
 # And that absolute URL must match your app's redirect_uri set in AAD
 REDIRECT_PATH = "/getAToken"  
@@ -43,4 +50,6 @@ SCOPE = [""]
 AUTHORITY = "https://login.microsoftonline.com/"
 MARKETPLACEAPI_ENDPOINT = 'https://marketplaceapi.microsoft.com/api/saas/subscriptions'
 MARKETPLACEAPI_OPERATIONS_ENDPOINT = 'https://marketplaceapi.microsoft.com/api/saas/operations'
+#Mock API
 MARKETPLACEAPI_API_VERSION="?api-version=2018-09-15"
+#MARKETPLACEAPI_API_VERSION="?api-version=2018-08-31"
