@@ -55,7 +55,6 @@ def webhook():
         request_payload = request.get_json(force=True)
         request_payload["PartitionKey"] = request_payload['subscriptionId']
         request_payload["RowKey"]  = request_payload['id']
-        app.logger.info(type(request_payload))
         
         try:
             # validate jwt tokens
@@ -63,15 +62,18 @@ def webhook():
             # https://github.com/RobertoPrevato/PythonJWTDemo/blob/master/demo.py
             # https://stackoverflow.com/questions/43142716/how-to-verify-jwt-id-token-produced-by-ms-azure-ad
             # https://stackoverflow.com/questions/51964173/how-to-validate-token-in-azure-ad-with-python
+            # https://github.com/realpython/flask-jwt-auth/
             #1 download openid config
             #2 get the jwks keys from jwks uri
             #3 search for token header kid in jwks keys and extract x5c(X.509 certificate chain)
             #4 extract the public key
             #5 decode the jwt 
             access_token = request.headers.get('Authorization')
-            app_id = app_config.MARKETPLACEAPI_CLIENT_ID
-            token_header = jwt.get_unverified_header(bearer_token)
-            app.logger.info(request_headers)
+            app_id = app_config.MARKETPLACEAPI_RESOURCE
+            bearer, _, token = access_token.partition(' ')
+            token_header = jwt.get_unverified_header(token)
+            issuer = f'https://sts.windows.net/{app_config.TENANT_ID}/' # iss
+            app.logger.info(issuer)
             
             #jwks_uri
             #res = requests.get('https://login.microsoftonline.com/common/.well-known/openid-configuration')
@@ -96,11 +98,14 @@ def webhook():
 
             #decode jwt using public key, if passed this step withour error, we can safely assume the token is validated
             jwt.decode(
-                    access_token,
+                    token,
                     public_key,
                     algorithms='RS256',
-                    audience=app_id,)
-        except:
+                    audience=app_id,
+                    issuer=issuer)
+            app.logger.info("Token validated!")
+        except Exception as e: 
+            app.logger.info(e)
             return "Authentication error!", 500
 
 
@@ -273,7 +278,7 @@ def get_marketplace_access_token():
     data = {'grant_type': 'client_credentials', 
             'client_id' : app_config.MARKETPLACEAPI_CLIENT_ID, 
             'client_secret' : app_config.MARKETPLACEAPI_CLIENT_SECRET,  
-            'resource':'62d94f6c-d599-489b-a797-3e10e42fbe22'}
+            'resource': app_config.MARKETPLACEAPI_RESOURCE}
     
     api_call_headers = {'content-type': 'application/x-www-form-urlencoded'}
     # get token for market place api

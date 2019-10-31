@@ -52,4 +52,5 @@ MARKETPLACEAPI_ENDPOINT = 'https://marketplaceapi.microsoft.com/api/saas/subscri
 MARKETPLACEAPI_OPERATIONS_ENDPOINT = 'https://marketplaceapi.microsoft.com/api/saas/operations'
 #Mock API
 MARKETPLACEAPI_API_VERSION="?api-version=2018-09-15"
+MARKETPLACEAPI_RESOURCE="62d94f6c-d599-489b-a797-3e10e42fbe22"
 #MARKETPLACEAPI_API_VERSION="?api-version=2018-08-31"
