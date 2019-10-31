@@ -34,6 +34,9 @@ if not MARKETPLACEAPI_CLIENT_ID:
 MARKETPLACEAPI_CLIENT_SECRET = os.getenv('MARKETPLACEAPI_CLIENT_SECRET')
 if not MARKETPLACEAPI_CLIENT_SECRET:
      raise ValueError("Need to define MARKETPLACEAPI_CLIENT_SECRET environment variable")
+MARKETPLACEAPI_API_VERSION = os.getenv('MARKETPLACEAPI_API_VERSION')
+if not MARKETPLACEAPI_API_VERSION:
+     raise ValueError("Need to define MARKETPLACEAPI_API_VERSION environment variable")
 
 STORAGE_CONNECTION_STRING = os.getenv('STORAGE_CONNECTION_STRING')
 if not STORAGE_CONNECTION_STRING:
@@ -50,8 +53,4 @@ SCOPE = [""]
 AUTHORITY = "https://login.microsoftonline.com/"
 MARKETPLACEAPI_ENDPOINT = 'https://marketplaceapi.microsoft.com/api/saas/subscriptions'
 MARKETPLACEAPI_OPERATIONS_ENDPOINT = 'https://marketplaceapi.microsoft.com/api/saas/operations'
-#Mock API
-#MARKETPLACEAPI_API_VERSION="?api-version=2018-09-15"
-MARKETPLACEAPI_API_VERSION="?api-version=2018-08-31"
-
 MARKETPLACEAPI_RESOURCE="62d94f6c-d599-489b-a797-3e10e42fbe22"

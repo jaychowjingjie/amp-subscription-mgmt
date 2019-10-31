@@ -1,10 +1,9 @@
 import uuid
 import requests
 from flask import Flask, render_template, session, request, redirect, url_for, jsonify
-from flask_session import Session  # https://pythonhosted.org/Flask-Session
+from flask_session import Session
 import msal
 import app_config
-from azure.storage import CloudStorageAccount
 from azure.storage.table import TableService, Entity
 from tablestorageaccount import TableStorageAccount
 import jwt
@@ -153,7 +152,8 @@ def landingpage():
         return redirect(url_for("login"))
     token = request.args.get('token')
     subscription = get_subscription_by_token(token)
-    if not token:
+    found_sub_id = hasattr(subscription, 'id')
+    if not token or 'id' not in subscription:
         return render_template('error.html', user=session["user"])  
     subscription_data = get_subscription(subscription['id'])
     plans = get_availableplans(subscription['id'])
@@ -187,8 +187,6 @@ def updatesubscription():
         return redirect(url_for("login"))
     else:
         return render_template('error.html', user=session["user"], response_statuscode = response.status_code)
-
-
     
 @app.route("/operations/<subscriptionid>")
 def operations(subscriptionid):
@@ -324,7 +322,7 @@ def call_marketplace_api(request_url, request_method='GET', request_payload='', 
                             'Content-Type': 'application/json',
                             'x-ms-requestid': str(uuid.uuid4()),
                             'x-ms-correlationid': str(uuid.uuid4())}
-    
+
     if request_method == 'GET':
         reponse_data= requests.get(  # Use token to call downstream service
                         request_url,

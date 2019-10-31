@@ -23,24 +23,26 @@
                 </tr>
             </thead>
             <tbody>
-                {% for operation in operations %}
-                        <tr>
-                            <td>{{ operation['subscriptionId'] }}</td>
-                            <td>{{ operation['activityId'] }}</td>
-                            <td>{{ operation['offerId'] }}</td>
-                            <td>{{ operation['planId'] }}</td>
-                            <td>{{ operation['quantity'] }}</td>
-                            <td>{{ operation['publisherId'] }}</td>
-                            <td>{{ operation['action'] }}</td>
-                            <td>{{ operation['timeStamp'] }}</td>
-                            <td>{{ operation['status'] }}</td>
-                            <td  class="text-center">
-                                <a href={{ url_for('updateoperation', operationid=operation['id'], subid=operation['subscriptionId'], planid=operation['planId'], quantity=operation['quantity'], status= "Success"  ) }}>
-                                    <span  style="font-size: 15px" class="glyphicon glyphicon-wrench"></span>
-                                </a>
-                            </td>
-                        </tr>
-                {% endfor %}
+                    {% for k, v in operations.items() %}
+                        {% for operation in v %}
+                            <tr>
+                                <td>{{ operation['subscriptionId'] }}</td>
+                                <td>{{ operation['activityId'] }}</td>
+                                <td>{{ operation['offerId'] }}</td>
+                                <td>{{ operation['planId'] }}</td>
+                                <td>{{ operation['quantity'] }}</td>
+                                <td>{{ operation['publisherId'] }}</td>
+                                <td>{{ operation['action'] }}</td>
+                                <td>{{ operation['timeStamp'] }}</td>
+                                <td>{{ operation['status'] }}</td>
+                                <td  class="text-center">
+                                    <a href={{ url_for('updateoperation', operationid=operation['id'], subid=operation['subscriptionId'], planid=operation['planId'], quantity=operation['quantity'], status= "Success"  ) }}>
+                                        <span  style="font-size: 15px" class="glyphicon glyphicon-wrench"></span>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
             </tbody>
         </table>
     </div>

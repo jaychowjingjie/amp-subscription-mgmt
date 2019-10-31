@@ -5,3 +5,8 @@ Flask-Session
 requests
 msal
 python-dotenv
+azure-common
+azure-nspkg
+azure-storage
+cryptography
+PyJWT

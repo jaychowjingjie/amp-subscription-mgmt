@@ -7,6 +7,7 @@
 # docker container rm --force bb -> remove one container
 # docker run -d -t -i -e REDIS_NAMESPACE='staging' -> loading env variables
 # docker run  -e TENANT_ID=123 -e CLIENT_ID=123 -e CLIENT_SECRET=123 -e MARKETPLACEAPI_TENANTID=123 -e MARKETPLACEAPI_CLIENT_ID=123 -e MARKETPLACEAPI_CLIENT_SECRET=123  -p 5000:5000 -it amp:latest
+# docker push yourhubusername/dockerimage
 
 FROM python
 COPY . /app
