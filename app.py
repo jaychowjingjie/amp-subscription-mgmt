@@ -151,11 +151,14 @@ def webhook():
 def landingpage():
     if not _user_is_authenticated():
         return redirect(url_for("login"))
+    token = request.args.get('token')
     subscription = get_subscription_by_token(token)
     if not token:
         return render_template('error.html', user=session["user"])  
-    plans = get_availableplans(subscriptionid)
-    return render_template('managesubscription.html', user=session["user"], subscription = subscription, available_plans= plans)
+    subscription_data = get_subscription(subscription['id'])
+    plans = get_availableplans(subscription['id'])
+    
+    return render_template('managesubscription.html', user=session["user"], subscription = subscription_data, available_plans= plans)
 
 @app.route("/edit/<subscriptionid>")
 def edit(subscriptionid):
@@ -170,13 +173,23 @@ def updatesubscription():
     if not _user_is_authenticated():
         return redirect(url_for("login"))
     selected_subscription = request.form['subscription_id']
-    selected_plan = request.form['selectedplan']
-    update_subscription_response = update_subscriptionplan(selected_subscription, selected_plan)
-    if update_subscription_response.status_code == 202:
+    
+    if 'activate' in request.form:
+        selected_plan = request.form['subscription_plan_id']
+        response = activate_subscriptionplan(selected_subscription, selected_plan)
+    elif 'update' in request.form:
+        selected_plan = request.form['selectedplan']
+        response = update_subscriptionplan(selected_subscription, selected_plan)
+    else:
+        return redirect(url_for("error.html"))
+
+    if response.status_code == 202 or response.status_code:
         return redirect(url_for("login"))
     else:
-        return render_template('error.html', user=session["user"], response_statuscode = update_subscription_response.status_code)
+        return render_template('error.html', user=session["user"], response_statuscode = response.status_code)
 
+
+    
 @app.route("/operations/<subscriptionid>")
 def operations(subscriptionid):
     app.logger.info(_user_is_authenticated())
@@ -245,24 +258,32 @@ def get_subscriptions():
     subscriptions_data=  call_marketplace_api(app_config.MARKETPLACEAPI_ENDPOINT+ app_config.MARKETPLACEAPI_API_VERSION)
     return subscriptions_data
  
-def get_subscription(subscription):
+def get_subscription(subscription_id):
     subscription_data=  call_marketplace_api(  # Use token to call downstream service
-        app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + app_config.MARKETPLACEAPI_API_VERSION)
+        app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription_id + app_config.MARKETPLACEAPI_API_VERSION)
     return subscription_data
 
 def get_subscription_by_token(token):
     subscription_data=  call_marketplace_api(app_config.MARKETPLACEAPI_ENDPOINT +"/resolve" + app_config.MARKETPLACEAPI_API_VERSION
-                                            ,resolve_token= token, resolve_url= True)
-    return subscription_data
+                                            ,request_method='POST', resolve_token= token, resolve_url= True)
+    return subscription_data.json()
 
 def get_availableplans(subscription):
     availableplans = call_marketplace_api(
         request_url=app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + "/listAvailablePlans" + app_config.MARKETPLACEAPI_API_VERSION)
     return availableplans
 
+def activate_subscriptionplan(subscription, plan_id):
+    request_plan_payload = "{\"planId\": \""+ plan_id +"\" ,\"quantity\": \"\" }"
+    updateresponse = call_marketplace_api(app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + "/activate"+  app_config.MARKETPLACEAPI_API_VERSION,                                      
+    'POST', 
+    request_plan_payload
+    )
+    return updateresponse
+
 def update_subscriptionplan(subscription, plan_id):
     request_plan_payload = "{\"planId\": \""+ plan_id +"\" }"
-    updateresponse = call_marketplace_api(app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription +       app_config.MARKETPLACEAPI_API_VERSION,                                      
+    updateresponse = call_marketplace_api(app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + app_config.MARKETPLACEAPI_API_VERSION,                                      
     'PATCH', 
     request_plan_payload
     )
@@ -315,7 +336,7 @@ def call_marketplace_api(request_url, request_method='GET', request_payload='', 
                     request_url,
                     headers=marketplaceheaders,
                     data=request_payload,
-        ).json()
+        )
         return reponse_data
     elif request_method == 'PATCH':
         reponse_data=requests.patch(  # Use token to call downstream service
