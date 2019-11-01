@@ -48,9 +48,10 @@ ISV_OPS_STORAGE_TABLE_NAME = os.getenv('ISV_OPS_STORAGE_TABLE_NAME')
 if not ISV_OPS_STORAGE_TABLE_NAME:
      raise ValueError("Need to define ISV_OPS_STORAGE_TABLE_NAME environment variable")
 
-# It will be used to form an absolute URL
-# And that absolute URL must match your app's redirect_uri set in AAD
-REDIRECT_PATH = "/getAToken"  
+REDIRECT_PATH = os.getenv('REDIRECT_PATH')
+if not REDIRECT_PATH:
+     raise ValueError("Need to define REDIRECT_PATH environment variable")
+
 SESSION_TYPE = "filesystem"  # So token cache will be stored in server-side session
 SCOPE = [""]
 AUTHORITY = "https://login.microsoftonline.com/"
