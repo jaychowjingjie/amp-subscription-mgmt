@@ -5,13 +5,17 @@
 <div class="jumbotron">
     <h1>Subscription Operations</h1>
 </div>
+<div class="row">
+    <h3 class="lead">Subscription: <b> {{subsciptionname}} ({{subscriptionid}})</b></h3>
+</div>
 
 <div class="row">
-        <table class="table">
+        <table class="table table-striped table-bordered table-hover">
             <thead>
                 <tr>
+                    <!--
                     <th scope="col">SubscriptionId</th>
-                    <th scope="col">ActivityId</th>
+                    <th scope="col">ActivityId</th> -->
                     <th scope="col">OfferId</th>
                     <th scope="col">PlanId</th>
                     <th scope="col">Quantity</th>
@@ -19,32 +23,76 @@
                     <th scope="col">Action</th>
                     <th scope="col">TimeStamp</th>
                     <th scope="col">Status</th>
+                    <th scope="col">Error Status</th>
+                    <th scope="col">Error Messsage</th>
                     <th scope="col">Update Status</th>
                 </tr>
             </thead>
             <tbody>
-                    {% for k, v in operations.items() %}
-                        {% for operation in v %}
-                            <tr>
-                                <td>{{ operation['subscriptionId'] }}</td>
-                                <td>{{ operation['activityId'] }}</td>
-                                <td>{{ operation['offerId'] }}</td>
-                                <td>{{ operation['planId'] }}</td>
-                                <td>{{ operation['quantity'] }}</td>
-                                <td>{{ operation['publisherId'] }}</td>
-                                <td>{{ operation['action'] }}</td>
-                                <td>{{ operation['timeStamp'] }}</td>
-                                <td>{{ operation['status'] }}</td>
-                                <td  class="text-center">
-                                    <a href={{ url_for('updateoperation', operationid=operation['id'], subid=operation['subscriptionId'], planid=operation['planId'], quantity=operation['quantity'], status= "Success"  ) }}>
-                                        <span  style="font-size: 15px" class="glyphicon glyphicon-wrench"></span>
-                                    </a>
-                                </td>
-                            </tr>
-                        {% endfor %}
+                {% if operations %}
+                    <tr><td colspan="10"><h4>Operations by SubId</h4></td></tr>
+                    {% for operation in operations %}
+                        <tr>
+                            <!--<td>{{ operation['subscriptionId'] }}</td>
+                            <td>{{ operation['activityId'] }}</td> -->
+                            <th scope="row">{{ operation['offerId'] }}</th>
+                            <td>{{ operation['planId'] }}</td>
+                            <td>{{ operation['quantity'] }}</td>
+                            <td>{{ operation['publisherId'] }}</td>
+                            <td>{{ operation['action'] }}</td>
+                            <td>{{ operation['timeStamp'] }}</td>
+                            <td>{{ operation['status'] }}</td>
+                            <td>{{ operation['errorStatusCode'] }}</td>
+                            <td>{{ operation['errorMessage'] }}</td>
+                            <td  class="text-center">
+                                <a href={{ url_for('updateoperation', operationid=operation['id'], subid=operation['subscriptionId'], planid=operation['planId'], quantity=operation['quantity'], status= "Success") }} class="btn btn-primary btn-sm active">Update Operation</a>
+                            </td>
+                        </tr>
                     {% endfor %}
+                {% endif %}
+                {% if webhookops %}
+                    <tr><td colspan="10"><h4>WebHook Operations</h4></td></tr>
+                    {% for operation in webhookops %}
+                        <tr>
+                            <!--<td>{{ operation['subscriptionId'] }}</td>
+                            <td>{{ operation['activityId'] }}</td> -->
+                            <th scope="row">{{ operation['offerId'] }}</th>
+                            <td>{{ operation['planId'] }}</td>
+                            <td>{{ operation['quantity'] }}</td>
+                            <td>{{ operation['publisherId'] }}</td>
+                            <td>{{ operation['action'] }}</td>
+                            <td>{{ operation['timeStamp'] }}</td>
+                            <td>{{ operation['status'] }}</td>
+                            <td>{{ operation['errorStatusCode'] }}</td>
+                            <td>{{ operation['errorMessage'] }}</td>
+                            <td  class="text-center">
+                                <a href={{ url_for('updateoperation', operationid=operation['id'], subid=operation['subscriptionId'], planid=operation['planId'], quantity=operation['quantity'], status= "Success") }} class="btn btn-primary btn-sm active">Update Operation</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+                {% if isvops %}
+                    <tr><td colspan="10"><h4>ISV Operations</h4>    </td></tr>
+                    {% for operation in isvops %}
+                        <tr>
+                            <!--<td>{{ operation['subscriptionId'] }}</td>
+                            <td>{{ operation['activityId'] }}</td> -->
+                            <th scope="row">{{ operation['offerId'] }}</th>
+                            <td>{{ operation['planId'] }}</td>
+                            <td>{{ operation['quantity'] }}</td>
+                            <td>{{ operation['publisherId'] }}</td>
+                            <td>{{ operation['action'] }}</td>
+                            <td>{{ operation['timeStamp'] }}</td>
+                            <td>{{ operation['status'] }}</td>
+                            <td>{{ operation['errorStatusCode'] }}</td>
+                            <td>{{ operation['errorMessage'] }}</td>
+                            <td  class="text-center">
+                                <a href={{ url_for('updateoperation', operationid=operation['id'], subid=operation['subscriptionId'], planid=operation['planId'], quantity=operation['quantity'], status= "Success") }} class="btn btn-primary btn-sm active">Update Operation</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
             </tbody>
         </table>
     </div>
-
 {% endblock %}

@@ -7,7 +7,7 @@
 </div>
 
 <div class="row">
-    <table class="table">
+    <table class="table table-striped table-bordered table-hover">
         <thead>
             <tr>
                 <th scope="col">Name</th>
@@ -17,30 +17,35 @@
                 <th scope="col">Quantity</th>
                 <th scope="col">SubscriptionId</th>
                 <th scope="col">Allowed Customer Actions</th>
-                <th scope="col">Actions(Change Plan/Quantity)</th>
-                <th scope="col">Pending operations</th>
+                <th scope="col" colspan="3" class="text-center">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for key, subscription in subscriptions.items() %}
                 {% for item in subscription %}
                     <tr>
-                        <td>{{ item['name'] }}</td>
+                        <th scope="row">{{ item['name'] }}</th>
                         <td>{{ item['saasSubscriptionStatus'] }}</td>
                         <td>{{ item['offerId'] }}</td>
                         <td>{{ item['planId'] }}</td>
                         <td class="text-center">{{ item['quantity'] }}</td>
                         <td>{{ item['id'] }}</td>
                         <td>{{ item['allowedCustomerOperations'] }}</td>
-                        <td>
+                        <td class="text-center">
                             {% if item['saasSubscriptionStatus'] !="Unsubscribed"  %}
-                            <a href={{ url_for('edit', subscriptionid=item['id']) }}>Update</a>
+                            <a href={{ url_for('edit', subscriptionid=item['id']) }} class="btn btn-primary btn-sm active" role="button" aria-pressed="true">
+                                Change Plan</a>
                             {% endif %}
                         </td>
+                        <td class="text-center">
+                                {% if item['saasSubscriptionStatus'] !="Unsubscribed"  %}
+                                <a href={{ url_for('edit', subscriptionid=item['id']) }} class="btn btn-primary btn-sm active" role="button" aria-pressed="true">
+                                    UnSubscribe</a>
+                                {% endif %}
+                            </td>
                         <td  class="text-center">
-                            <a href={{ url_for('operations', subscriptionid=item['id']) }}>
-                                <span  style="font-size: 15px" class="glyphicon glyphicon-wrench"></span>
-                            </a>
+                            <a href={{ url_for('operations', subscriptionid=item['id'], subscriptionname=item['name']) }} class="btn btn-primary btn-sm active">
+                                Operations</a>
                         </td>
                     </tr>
                 {% endfor %}
