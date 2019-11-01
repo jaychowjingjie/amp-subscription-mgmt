@@ -39,7 +39,7 @@ def authorized():
         result = _build_msal_app(cache=cache).acquire_token_by_authorization_code(
             request.args['code'],
             scopes=[],  # Misspelled scope would cause an HTTP 400 error here
-            redirect_uri=url_for("authorized", _external=True))
+            redirect_uri=url_for("authorized", _external=True, _scheme='https'))
         if "error" in result:
             return "Login failure: %s, %s" % (
                 result["error"], result.get("error_description"))
