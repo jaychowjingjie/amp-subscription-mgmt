@@ -25,7 +25,7 @@ def login():
                     [],  # Technically we can use empty list [] to just sign in,
                                # here we choose to also collect end user consent upfront
                     state=session["state"],
-                    redirect_uri=url_for("authorized", _external=True))
+                    redirect_uri=url_for("authorized", _external=True, _scheme='https'))
 
         return redirect(auth_url, code=302)
     else:
