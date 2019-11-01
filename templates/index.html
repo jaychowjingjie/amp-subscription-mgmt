@@ -16,6 +16,7 @@
                 <th scope="col">PlanId</th>
                 <th scope="col">Quantity</th>
                 <th scope="col">SubscriptionId</th>
+                <th scope="col">Allowed Customer Actions</th>
                 <th scope="col">Actions(Change Plan/Quantity)</th>
                 <th scope="col">Pending operations</th>
             </tr>
@@ -30,6 +31,7 @@
                         <td>{{ item['planId'] }}</td>
                         <td class="text-center">{{ item['quantity'] }}</td>
                         <td>{{ item['id'] }}</td>
+                        <td>{{ item['allowedCustomerOperations'] }}</td>
                         <td>
                             {% if item['saasSubscriptionStatus'] !="Unsubscribed"  %}
                             <a href={{ url_for('edit', subscriptionid=item['id']) }}>Update</a>

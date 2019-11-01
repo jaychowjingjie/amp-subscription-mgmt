@@ -41,9 +41,12 @@ if not MARKETPLACEAPI_API_VERSION:
 STORAGE_CONNECTION_STRING = os.getenv('STORAGE_CONNECTION_STRING')
 if not STORAGE_CONNECTION_STRING:
      raise ValueError("Need to define STORAGE_CONNECTION_STRING environment variable")
-STORAGE_TABLE_NAME = os.getenv('STORAGE_TABLE_NAME')
-if not STORAGE_TABLE_NAME:
-     raise ValueError("Need to define STORAGE_TABLE_NAME environment variable")
+WEBHOOK_OPS_STORAGE_TABLE_NAME = os.getenv('WEBHOOK_OPS_STORAGE_TABLE_NAME')
+if not WEBHOOK_OPS_STORAGE_TABLE_NAME:
+     raise ValueError("Need to define WEBHOOK_OPS_STORAGE_TABLE_NAME environment variable")
+ISV_OPS_STORAGE_TABLE_NAME = os.getenv('ISV_OPS_STORAGE_TABLE_NAME')
+if not ISV_OPS_STORAGE_TABLE_NAME:
+     raise ValueError("Need to define ISV_OPS_STORAGE_TABLE_NAME environment variable")
 
 # It will be used to form an absolute URL
 # And that absolute URL must match your app's redirect_uri set in AAD

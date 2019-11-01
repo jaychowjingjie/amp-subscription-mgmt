@@ -9,6 +9,7 @@ from tablestorageaccount import TableStorageAccount
 import jwt
 from cryptography.x509 import load_pem_x509_certificate
 from cryptography.hazmat.backends import default_backend
+import re
 
 app = Flask(__name__)
 app.config.from_object(app_config)
@@ -41,7 +42,6 @@ def authorized():
         if "error" in result:
             return "Login failure: %s, %s" % (
                 result["error"], result.get("error_description"))
-        app.logger.info(result)
         session["user"] = result.get("id_token_claims")
         _save_cache(cache)
     return redirect(url_for("login"))
@@ -51,97 +51,12 @@ def authorized():
 def webhook():
 
     try:
+        validate_jwt_token(request.headers.get('Authorization'))
+        #connect to table storgae
         request_payload = request.get_json(force=True)
         request_payload["PartitionKey"] = request_payload['subscriptionId']
         request_payload["RowKey"]  = request_payload['id']
-        
-        try:
-            # validate jwt tokens
-            # https://aboutsimon.com/blog/2017/12/05/Azure-ActiveDirectory-JWT-Token-Validation-With-Python.html
-            # https://github.com/RobertoPrevato/PythonJWTDemo/blob/master/demo.py
-            # https://stackoverflow.com/questions/43142716/how-to-verify-jwt-id-token-produced-by-ms-azure-ad
-            # https://stackoverflow.com/questions/51964173/how-to-validate-token-in-azure-ad-with-python
-            # https://github.com/realpython/flask-jwt-auth/
-            #1 download openid config
-            #2 get the jwks keys from jwks uri
-            #3 search for token header kid in jwks keys and extract x5c(X.509 certificate chain)
-            #4 extract the public key
-            #5 decode the jwt 
-            access_token = request.headers.get('Authorization')
-            app_id = app_config.MARKETPLACEAPI_RESOURCE
-            bearer, _, token = access_token.partition(' ')
-            token_header = jwt.get_unverified_header(token)
-            issuer = f'https://sts.windows.net/{app_config.TENANT_ID}/' # iss
-            app.logger.info(issuer)
-            
-            #jwks_uri
-            #res = requests.get('https://login.microsoftonline.com/common/.well-known/openid-configuration')
-            #jwk_uri = res.json()['jwks_uri']
-            jwk_uri="https://login.windows.net/common/discovery/keys"
-            res = requests.get(jwk_uri)
-            jwk_keys = res.json()
-            x5c = None
-
-            # Iterate JWK keys and extract matching x5c chain
-            for key in jwk_keys['keys']:
-                if key['kid'] == token_header['kid']:
-                    x5c = key['x5c']
-
-            #create a public key from the cert made from x5c
-            cert = ''.join([
-            '-----BEGIN CERTIFICATE-----\n',
-            x5c[0],
-            '\n-----END CERTIFICATE-----\n',    
-            ])
-            public_key =  load_pem_x509_certificate(cert.encode(), default_backend()).public_key()
-
-            #decode jwt using public key, if passed this step withour error, we can safely assume the token is validated
-            jwt.decode(
-                    token,
-                    public_key,
-                    algorithms='RS256',
-                    audience=app_id,
-                    issuer=issuer)
-            app.logger.info("Token validated!")
-        except Exception as e: 
-            app.logger.info(e)
-            return "Authentication error!", 500
-
-
-        #connect to table storgae
-        # https://github.com/Azure-Samples/storage-table-python-getting-started/blob/master/start.py
-        account_connection_string = app_config.STORAGE_CONNECTION_STRING
-
-        # Split into key=value pairs removing empties, then split the pairs into a dict
-        config = dict(s.split('=', 1) for s in account_connection_string.split(';') if s)
-
-        # Authentication
-        account_name = config.get('AccountName')
-        account_key = config.get('AccountKey')
-
-        # Basic URL Configuration
-        endpoint_suffix = config.get('EndpointSuffix')
-        if endpoint_suffix == None:
-            table_endpoint = config.get('TableEndpoint')
-            table_prefix = '.table.'
-            start_index = table_endpoint.find(table_prefix)
-            end_index = table_endpoint.endswith(':') and len(table_endpoint) or table_endpoint.rfind(':')
-            endpoint_suffix = table_endpoint[start_index+len(table_prefix):end_index]
-        account = TableStorageAccount(account_name = account_name, connection_string = account_connection_string, endpoint_suffix=endpoint_suffix)
-        table_service = account.create_table_service()
-        app.logger.info(request_payload)
-
-        # Insert the entity into the table
-        print('Inserting a new entity into table - ' + app_config.STORAGE_TABLE_NAME)
-        table_service.insert_entity(app_config.STORAGE_TABLE_NAME, request_payload)
-        
-        """query table storage
-        tasks = table_service.query_entities('tasktable', filter="PartitionKey eq 'tasksSeattle'")
-        for task in tasks:
-            print(task.description)
-            print(task.priority)"""
-        print('Successfully inserted the new entity')
-
+        store_in_azure_table(app_config.WEBHOOK_OPS_STORAGE_TABLE_NAME, request_payload)
         return jsonify(), 201
     except:
         return jsonify("An exception occurred"), 500
@@ -273,11 +188,11 @@ def get_availableplans(subscription):
 
 def activate_subscriptionplan(subscription, plan_id):
     request_plan_payload = "{\"planId\": \""+ plan_id +"\" ,\"quantity\": \"\" }"
-    updateresponse = call_marketplace_api(app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + "/activate"+  app_config.MARKETPLACEAPI_API_VERSION,                                      
+    activateresponse = call_marketplace_api(app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + "/activate"+  app_config.MARKETPLACEAPI_API_VERSION,                                      
     'POST', 
     request_plan_payload
     )
-    return updateresponse
+    return activateresponse
 
 def update_subscriptionplan(subscription, plan_id):
     request_plan_payload = "{\"planId\": \""+ plan_id +"\" }"
@@ -285,8 +200,102 @@ def update_subscriptionplan(subscription, plan_id):
     'PATCH', 
     request_plan_payload
     )
-    return updateresponse
     
+    updateresponseheaders = updateresponse.headers
+    updateresponsestatuscode = updateresponse.status_code
+    if 'Operation-Location' in updateresponseheaders and updateresponsestatuscode ==202:
+        operation_location = updateresponseheaders['Operation-Location']
+        subscription_id = re.search('subscriptions/(.*)/operations', operation_location).group(1)
+        operation_id = re.search('operations/(.*)\?api-version', operation_location).group(1)
+        operation_datetime = updateresponseheaders['Date']
+        # store in table storage
+        if subscription_id and operation_id:
+            #connect to table storgae
+            request_payload ={ 'PartitionKey':subscription_id ,'RowKey':operation_id, 'updatedtime' : operation_datetime, 'SubscriptionId':subscription_id ,'OperationId':operation_id }
+            store_in_azure_table(app_config.ISV_OPS_STORAGE_TABLE_NAME, request_payload)
+        else:
+            return redirect(url_for('error.html'), user=session["user"])
+    return updateresponse
+
+def validate_jwt_token(access_token):
+    try:
+        # validate jwt tokens
+        # https://aboutsimon.com/blog/2017/12/05/Azure-ActiveDirectory-JWT-Token-Validation-With-Python.html
+        # https://github.com/RobertoPrevato/PythonJWTDemo/blob/master/demo.py
+        # https://stackoverflow.com/questions/43142716/how-to-verify-jwt-id-token-produced-by-ms-azure-ad
+        # https://stackoverflow.com/questions/51964173/how-to-validate-token-in-azure-ad-with-python
+        # https://github.com/realpython/flask-jwt-auth/
+        #1 download openid config
+        #2 get the jwks keys from jwks uri
+        #3 search for token header kid in jwks keys and extract x5c(X.509 certificate chain)
+        #4 extract the public key
+        #5 decode the jwt 
+        app_id = app_config.MARKETPLACEAPI_RESOURCE
+        bearer, _, token = access_token.partition(' ')
+        token_header = jwt.get_unverified_header(token)
+        issuer = f'https://sts.windows.net/{app_config.TENANT_ID}/' # iss
+        app.logger.info(issuer)
+        
+        #jwks_uri
+        #res = requests.get('https://login.microsoftonline.com/common/.well-known/openid-configuration')
+        #jwk_uri = res.json()['jwks_uri']
+        jwk_uri="https://login.windows.net/common/discovery/keys"
+        res = requests.get(jwk_uri)
+        jwk_keys = res.json()
+        x5c = None
+
+        # Iterate JWK keys and extract matching x5c chain
+        for key in jwk_keys['keys']:
+            if key['kid'] == token_header['kid']:
+                x5c = key['x5c']
+
+        #create a public key from the cert made from x5c
+        cert = ''.join([
+        '-----BEGIN CERTIFICATE-----\n',
+        x5c[0],
+        '\n-----END CERTIFICATE-----\n',    
+        ])
+        public_key =  load_pem_x509_certificate(cert.encode(), default_backend()).public_key()
+
+        #decode jwt using public key, if passed this step withour error, we can safely assume the token is validated
+        jwt.decode(
+                token,
+                public_key,
+                algorithms='RS256',
+                audience=app_id,
+                issuer=issuer)
+        app.logger.info("Token validated!")
+    except Exception as e: 
+        app.logger.info(e)
+        return "Authentication error!", 500
+
+def store_in_azure_table(table_name, request_payload):
+    #connect to table storgae
+        # https://github.com/Azure-Samples/storage-table-python-getting-started/blob/master/start.py
+        account_connection_string = app_config.STORAGE_CONNECTION_STRING
+
+        # Split into key=value pairs removing empties, then split the pairs into a dict
+        config = dict(s.split('=', 1) for s in account_connection_string.split(';') if s)
+
+        # Authentication
+        account_name = config.get('AccountName')
+        account_key = config.get('AccountKey')
+
+        # Basic URL Configuration
+        endpoint_suffix = config.get('EndpointSuffix')
+        if endpoint_suffix == None:
+            table_endpoint = config.get('TableEndpoint')
+            table_prefix = '.table.'
+            start_index = table_endpoint.find(table_prefix)
+            end_index = table_endpoint.endswith(':') and len(table_endpoint) or table_endpoint.rfind(':')
+            endpoint_suffix = table_endpoint[start_index+len(table_prefix):end_index]
+        account = TableStorageAccount(account_name = account_name, connection_string = account_connection_string, endpoint_suffix=endpoint_suffix)
+        table_service = account.create_table_service()
+        app.logger.info(request_payload)
+
+        # Insert the entity into the table
+        table_service.insert_entity(table_name, request_payload)
+
 def get_sub_operations(subscription):
     sub_operations_data =  call_marketplace_api(  # Use token to call downstream service
         app_config.MARKETPLACEAPI_ENDPOINT +"/"+ subscription + "/operations" + app_config.MARKETPLACEAPI_API_VERSION)
@@ -347,7 +356,7 @@ def call_marketplace_api(request_url, request_method='GET', request_payload='', 
         reponse_data=requests.get(  # Use token to call downstream service
                     request_url,
                     headers=marketplaceheaders
-        ).json()
+        )
         return reponse_data
 
 
