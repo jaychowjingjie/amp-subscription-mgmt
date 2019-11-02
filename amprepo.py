@@ -7,8 +7,6 @@ import constant
 import utils
 import logging
 
-logger = logging.getLogger('werkzeug')
-
 
 def get_subscriptions():
     subscriptions_data = call_marketplace_api(constant.GET_SUBSCRIPTIONS_ENDPOINT)
