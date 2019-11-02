@@ -129,12 +129,7 @@ def call_marketplace_api(request_url, request_method='GET', request_payload='', 
                               'x-ms-correlationid': str(uuid.uuid4())}
 
     if request_method == 'GET':
-        logger.info(f"Request: {request_url}")
-        logger.info(f"Request: {marketplaceheaders}")
         reponse_data = requests.get(request_url, headers=marketplaceheaders).json()
-        logger.info(f"Response: {reponse_data}")
-        if not reponse_data:
-            logger.info(f"Response: {reponse_data.status_code}")
         return reponse_data
     elif request_method == 'POST':
         reponse_data = requests.post(request_url, headers=marketplaceheaders, data=request_payload)
